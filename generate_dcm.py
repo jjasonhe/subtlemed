@@ -46,9 +46,9 @@ def generate_dcm(h5_path, temp_path, dcm_path):
         im = (h5_data[idx,:,:]-0.5)*2*np.iinfo(ds.pixel_array.dtype).max
         ds.PixelData = np.int16(im).tobytes()
         # Add Series Instance UID
-        ds[t_ser] = ser
+        ds[t_ser].value = ser
         # Add SOP Instance UID
-        ds[t_sop] = generate_uid()
+        ds[t_sop].value = generate_uid()
         # Save to output directory
         ds.save_as(os.path.join(dcm_path, file))
 
