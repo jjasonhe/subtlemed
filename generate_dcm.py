@@ -3,14 +3,13 @@ import argparse
 import numpy as np
 import pydicom
 from pydicom.tag import Tag
+from pydicom.uid import generate_uid
 import h5py as h5
 import json
 
 # Tags for desired metadata, as defined by DICOM standards
-t_sl = Tag(0x00180088) # spacing - slice
-t_xy = Tag(0x00280030) # spacing - x,y
-t_sd = Tag(0x0008103e) # series description
-t_mod = Tag(0x00080060) # modality
+t_ser = Tag(0x0020000E) # Series Instance UID
+t_sop = Tag(0x00080018) # SOP Instance UID
 
 def extract_dcm(filepath):
     """Multi-purpose 
@@ -25,37 +24,33 @@ def extract_dcm(filepath):
     mod = ds[t_mod].value
     return im, im.shape, sp, sd, mod
 
-def generate_dcm(dcm_path, h5_path, json_path):
-    """Creates hdf5 and JSON from DICOMs
+def generate_dcm(h5_path, temp_path, dcm_path):
+    """Creates new DICOMs from hdf5 and template DICOMs
 
-    :param dcm_path: path to input DICOM directory
-    :param h5_path: path to output hdf5 file
-    :param json_path: path to output JSON file
+    :param h5_path: path to input hdf5 file
+    :param temp_path: path to the template DICOM directory
+    :param dcm_path: path to output DICOM directory
     """
-    dcm_list = os.listdir(dcm_path)
-    dcm_list.sort()
-    num_dcm = len(dcm_list)
-    _, xy, sp, sd, mod = extract_dcm(os.path.join(dcm_path, dcm_list[0]))
-    if len(xy) is not 2:
-        print("Error: Expected 2-D DICOM")
-        return
+    temp_list = os.listdir(temp_path)
+    temp_list.sort()
 
-    # Fill and normalize volume
-    volume = np.zeros((num_dcm, xy[0], xy[1]))
-    for idx, dcm_file in enumerate(dcm_list):
-        im, _, sp, sd, mod = extract_dcm(os.path.join(dcm_path, dcm_file))
-        volume[idx,:,:] = im
-    volume = volume + np.min(volume)
-    volume = volume / np.max(volume)
+    # Open hdf5 and generate Series Instance UID
+    f = h5.File(h5_path, "r")
+    h5_data = f['data']
+    ser = generate_uid()
 
-    # Create hdf5 dataset
-    f = h5.File(h5_path, "w")
-    ds = f.create_dataset("data", data=np.float32(volume))
-
-    # Create JSON file
-    json_data = dict([('pixelSpacing', sp), ('seriesDescription', sd), ('modality', mod)])
-    with open(json_path, 'w') as json_file:
-        json.dump(json_data, json_file)
+    for idx, file in enumerate(temp_list):
+        # Read dicom
+        ds = pydicom.dcmread(os.path.join(temp_path, file))
+        # Scale
+        im = (h5_data[idx,:,:]-0.5)*2*np.iinfo(ds.pixel_array.dtype).max
+        ds.PixelData = np.int16(im).tobytes()
+        # Add Series Instance UID
+        ds[t_ser] = ser
+        # Add SOP Instance UID
+        ds[t_sop] = generate_uid()
+        # Save to output directory
+        ds.save_as(os.path.join(dcm_path, file))
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Convert DICOMs to hdf5", add_help=False)
