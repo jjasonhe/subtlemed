@@ -31,6 +31,8 @@ class InferencePipeline:
 
         :return: a InferencePipeline object
         '''
+        self.registry = registry
+        return self.registry
 
     def register(self, job: JobEntry):
         '''Add a job into the registry.
@@ -39,6 +41,10 @@ class InferencePipeline:
 
         :param job: A JobEntry object containing the job to be registered
         '''
+        for idx, r in enumerate(self.registry):
+            if r[0] is job[0]:
+                del self.registry[idx]
+        self.registry.append(job)
 
     def unregister(self, job_name: str):
         '''Remove a job by name from the registry.
@@ -47,6 +53,10 @@ class InferencePipeline:
 
         :param job_name: the name of the job to be removed
         '''
+        for idx, r in enumerate(self.registry):
+            if r[0] is job_name:
+                del self.registry[idx]
+
 
     def is_job_registered(self, job_name: str) -> bool:
         '''Check if a job_name is registered with the pipeline
