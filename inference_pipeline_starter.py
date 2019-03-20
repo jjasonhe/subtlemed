@@ -34,6 +34,10 @@ class InferencePipeline:
         self.registry = registry
         return self.registry
 
+        self.registry = {}
+        for idx, r in enumerate(registry):
+            self.registry[r[0]] = r
+
     def register(self, job: JobEntry):
         '''Add a job into the registry.
 
@@ -45,6 +49,8 @@ class InferencePipeline:
             if r[0] is job[0]:
                 del self.registry[idx]
         self.registry.append(job)
+
+        self.registry[job[0]] = job
 
     def unregister(self, job_name: str):
         '''Remove a job by name from the registry.
