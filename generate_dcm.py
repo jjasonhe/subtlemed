@@ -31,7 +31,7 @@ def generate_dcm(h5_path, temp_path, dcm_path):
     :param temp_path: path to the template DICOM directory
     :param dcm_path: path to output DICOM directory
     """
-    temp_list = os.listdir(temp_path)
+    temp_list = os.listdir('temp_path')
     temp_list.sort()
 
     # Open hdf5 and generate Series Instance UID
@@ -51,6 +51,7 @@ def generate_dcm(h5_path, temp_path, dcm_path):
         ds[t_sop].value = generate_uid()
         # Save to output directory
         ds.save_as(os.path.join(dcm_path, file))
+    f.close()
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Convert DICOMs to hdf5", add_help=False)
