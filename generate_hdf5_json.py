@@ -25,7 +25,7 @@ def extract_dcm(filepath):
     mod = ds[t_mod].value
     return im, im.shape, sp, sd, mod
 
-def generate_hdf5_json(dcm_path, h5_path, json_path):
+def generate_hdf5_json(dcm_path: str, h5_path: str, json_path: str):
     """Creates hdf5 and JSON from DICOMs
 
     :param dcm_path: path to input DICOM directory
@@ -47,10 +47,12 @@ def generate_hdf5_json(dcm_path, h5_path, json_path):
         volume[idx,:,:] = im
     volume = volume + np.min(volume)
     volume = volume / np.max(volume)
+    volume = np.float32(volume)
 
     # Create hdf5 dataset
     f = h5.File(h5_path, "w")
-    ds = f.create_dataset("data", data=np.float32(volume))
+    ds = f.create_dataset("data", data=volume)
+    f.close()
 
     # Create JSON file
     json_data = dict([('pixelSpacing', sp), ('seriesDescription', sd), ('modality', mod)])
