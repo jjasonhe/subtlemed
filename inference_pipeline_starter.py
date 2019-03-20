@@ -1,10 +1,8 @@
 import collections
 
-
 # Create a namedtuple type as the entries in a job registry
 JobEntry = collections.namedtuple('JobEntry',
                                   'name config preprocess postprocess func')
-
 
 class InferencePipeline:
     '''Registers and executes inference jobs.
@@ -31,9 +29,6 @@ class InferencePipeline:
 
         :return: a InferencePipeline object
         '''
-        self.registry = registry
-        return self.registry
-
         self.registry = {}
         for idx, r in enumerate(registry):
             self.registry[r[0]] = r
@@ -45,11 +40,6 @@ class InferencePipeline:
 
         :param job: A JobEntry object containing the job to be registered
         '''
-        for idx, r in enumerate(self.registry):
-            if r[0] is job[0]:
-                del self.registry[idx]
-        self.registry.append(job)
-
         self.registry[job[0]] = job
 
     def unregister(self, job_name: str):
@@ -59,10 +49,7 @@ class InferencePipeline:
 
         :param job_name: the name of the job to be removed
         '''
-        for idx, r in enumerate(self.registry):
-            if r[0] is job_name:
-                del self.registry[idx]
-
+        self.registry.pop(job_name)
 
     def is_job_registered(self, job_name: str) -> bool:
         '''Check if a job_name is registered with the pipeline
@@ -70,6 +57,7 @@ class InferencePipeline:
         :param job_name: str, the unique name of the job
         :return: bool, if the job is registered
         '''
+        return (job_name in self.registry)
 
     def execute(self, job_name: str, in_dicom_dir: str, out_dicom_dir: str):
         '''Execute a job specified by job_name, with the in_dicom_dir
@@ -80,3 +68,11 @@ class InferencePipeline:
         :param in_dicom_dir: a string, the path to the input DICOM folder
         :param out_dicom_dir: a string, the path to the output DICOM folder
         '''
+        j = self.registry[job_name]
+        # This is done pretty intentionally/specifically to work with:
+        # - pre_gaussian_blur3d
+        # - gaussian_blur3d
+        # - post_gaussian_blur3d
+        inp, md = j[2](in_dicom_dir)
+        out = j[4](inp, md, j[1])
+        j[3](out, in_dicom_dir, out_dicom_dir)
