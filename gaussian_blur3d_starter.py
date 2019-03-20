@@ -39,3 +39,4 @@ def post_gaussian_blur3d(output_3d: np.ndarray, in_dir: str, out_dir: str):
     f.close()
     print('generating')
     generate_dcm('tmp.h5', in_dir, out_dir)
+    os.remove('tmp.h5')
