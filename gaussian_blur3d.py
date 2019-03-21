@@ -17,8 +17,44 @@ def gaussian_blur3d(input_3d: np.ndarray, meta_data: dict,
 
     :return: the blurred volume in 3D numpy array, same size as input_3d
     '''
-    print('blurred')
-    return input_3d
+    # sz_x = np.round(config['sigma']/meta_data['spacing'][0])
+    # sz_y = np.round(config['sigma']/meta_data['spacing'][1])
+    # sz_z = np.round(config['sigma']/meta_data['spacing'][2])
+
+    # gauss_kern = np.zeros((sz_x, sz_y, sz_z))
+
+    sigma = config['sigma']
+    kernel_half = int(np.round(3*sigma))
+
+    gauss_k = np.exp((-1/(2*sigma**2))*np.arange(-kernel_half, kernel_half+1)**2)
+    gauss_k = gauss_k / np.sum(gauss_k)
+    kernel_size = len(gauss_k)
+
+    pad_x = np.pad(input_3d, ((kernel_half,), (0,), (0,)), 'edge')
+    conv_x = np.zeros_like(input_3d)
+    for y in range(input_3d.shape[1]):
+        for z in range(input_3d.shape[2]):
+            for x in range(input_3d.shape[0]):
+                conv_x[x,y,z] = np.convolve(gauss_k, pad_x[x:x+kernel_size,y,z], 'valid')
+    # print('Done with x')
+
+    pad_y = np.pad(conv_x, ((0,), (kernel_half,), (0,)), 'edge')
+    conv_y = np.zeros_like(input_3d)
+    for x in range(input_3d.shape[0]):
+        for z in range(input_3d.shape[2]):
+            for y in range(input_3d.shape[1]):
+                conv_y[x,y,z] = np.convolve(gauss_k, pad_y[x,y:y+kernel_size,z], 'valid')
+    # print('Done with y')
+
+    pad_z = np.pad(conv_y, ((0,), (0,), (kernel_half,)), 'edge')
+    output_3d = np.zeros_like(input_3d)
+    for x in range(input_3d.shape[0]):
+        for y in range(input_3d.shape[1]):
+            for z in range(input_3d.shape[2]):
+                output_3d[x,y,z] = np.convolve(gauss_k, pad_z[x,y,z:z+kernel_size], 'valid')
+    # print('Done with z')
+
+    return output_3d
 
 def pre_gaussian_blur3d(in_dir: str):
     '''Takes DICOM directory and produces numpy array
