@@ -41,10 +41,10 @@ def generate_hdf5_json(dcm_path: str, h5_path: str, json_path: str):
         return
 
     # Fill and normalize volume
-    volume = np.zeros((num_dcm, xy[0], xy[1]))
+    volume = np.zeros((xy[0], xy[1], num_dcm))
     for idx, dcm_file in enumerate(dcm_list):
         im, _, sp, sd, mod = extract_dcm(os.path.join(dcm_path, dcm_file))
-        volume[idx,:,:] = im
+        volume[:,:,idx] = im
     volume = volume + np.min(volume)
     volume = volume / np.max(volume)
     volume = np.float32(volume)
@@ -55,7 +55,7 @@ def generate_hdf5_json(dcm_path: str, h5_path: str, json_path: str):
     f.close()
 
     # Create JSON file
-    json_data = dict([('pixelSpacing', sp), ('seriesDescription', sd), ('modality', mod)])
+    json_data = dict([('spacing', sp), ('description', sd), ('modality', mod)])
     with open(json_path, 'w') as json_file:
         json.dump(json_data, json_file)
 
